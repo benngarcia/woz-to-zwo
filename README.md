@@ -1,61 +1,78 @@
-# woz-to-zwo
+# WhatsOnZwift Workout Exporter
 
-A browser extension that creates and downloads custom workout files (.zwo) based on workout details from whatsonzwift.com.
+This Chrome extension allows you to easily download Zwift workouts from the WhatsOnZwift website as .zwo files that can be imported directly into Zwift.
 
-## Features
+## Installation Guide
 
-- Adds a "Download .zwo" button to workout pages on whatsonzwift.com
-- Parses workout segments automatically
-- Generates standard .zwo files compatible with Zwift
-- Handles various workout segment types including:
-  - Steady state intervals
-  - Ramp segments
-  - Interval sets (IntervalsT) with repeat, on/off durations and powers
-- Includes cadence targets when specified in the workout
+### A. Installing the Extension
 
-## Installation
+#### Method 1: From the Chrome Web Store (Recommended)
+1. Open the Google Chrome browser
+2. Visit the [WhatsOnZwift Workout Exporter](https://chrome.google.com/webstore/detail/link-to-be-added) page on the Chrome Web Store
+3. Click the "Add to Chrome" button
+4. Click "Add Extension" when prompted
+5. You'll see a small icon appear in your browser's toolbar
 
-1. Clone this repository or download the source code
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" (toggle in the top-right corner)
-4. Click "Load unpacked" and select the extension directory
-5. The extension will activate automatically when you visit whatsonzwift.com workout pages
+#### Method 2: Manual Installation
+1. Download the extension.zip file from this repository
+2. Unzip the file to a location on your computer
+3. Open Chrome and type `chrome://extensions` in the address bar
+4. Turn on "Developer mode" using the toggle in the top-right corner
+5. Click the "Load unpacked" button
+6. Navigate to the folder where you unzipped the extension and select it
+7. The extension is now installed!
 
-## Usage
+### B. Using the Extension
 
-1. Visit any workout page on whatsonzwift.com (e.g., https://whatsonzwift.com/workouts/...)
-2. Click the "Download .zwo" button that appears on the page
-3. The .zwo file will download automatically
-4. Import the downloaded file into Zwift
+1. Visit the [WhatsOnZwift](https://whatsonzwift.com/workouts/) website
+2. Browse and select a workout you're interested in
+3. Once on the workout page, you'll see a green "Download .zwo" button below the workout details
+4. If prompted, enter your FTP (Functional Threshold Power) value
+5. Click the "Download .zwo" button to save the workout file to your computer
+6. The file will be saved to your default downloads folder with the workout name
 
-## Testing
+### C. Moving the Workout to Zwift
 
-The extension includes automated tests to verify the HTML parsing functionality and ZWO generation:
+#### For Windows Users:
+1. Locate the downloaded .zwo file in your Downloads folder
+2. Move (or copy) the file to this folder:
+   ```
+   C:\Users\[YOUR USERNAME]\Documents\Zwift\Workouts\[YOUR ZWIFT USER ID]
+   ```
+   (Replace [YOUR USERNAME] with your Windows username and [YOUR ZWIFT USER ID] with your Zwift user ID number)
+3. If the Workouts or your user ID folder doesn't exist, you can create them
 
-```bash
-# Install development dependencies
-npm install
+#### For Mac Users:
+1. Locate the downloaded .zwo file in your Downloads folder
+2. Move (or copy) the file to this folder:
+   ```
+   /Users/[YOUR USERNAME]/Documents/Zwift/Workouts/[YOUR ZWIFT USER ID]
+   ```
+   (Replace [YOUR USERNAME] with your Mac username and [YOUR ZWIFT USER ID] with your Zwift user ID number)
+3. If the Workouts or your user ID folder doesn't exist, you can create them
 
-# Run the test suite
-npm test
-```
+#### For iOS/iPadOS and Android Users:
+1. The easiest method is to email the .zwo file to yourself
+2. Open the email on your device and save the attachment
+3. Open the Zwift app
+4. Go to Training > Workouts > Custom Workouts
+5. Your downloaded workout should appear in the list
 
-The tests verify:
-- Duration parsing (minutes, seconds)
-- Steady state segment parsing (with and without cadence)
-- Ramp segment parsing
-- Interval segment parsing (with various formats)
-- XML generation for different segment types
+#### Finding Your Zwift User ID
+1. Log in to [Zwift.com](https://zwift.com)
+2. Go to your profile page
+3. Your Zwift ID appears in the URL as a number (e.g., https://zwift.com/athlete/12345678)
 
-## Current Limitations
+## Troubleshooting
 
-- Only works on whatsonzwift.com workout pages
-- May not correctly parse all complex workout structures
-- Limited support for specialized segment types (e.g., free rides, text events)
-- No customization options for the generated workout files (Use zwofactory.com)
-- Does not support workout descriptions
-- The extension is currently in beta and may contain bugs
+- **Workout not showing in Zwift?** Make sure Zwift is closed when you add new workout files. Restart Zwift to see your new workouts.
+- **Download button not appearing?** Make sure you're on a specific workout page on WhatsOnZwift, not the main workouts listing.
+- **Need help?** Please create an issue on our GitHub page with details of your problem.
+
+## Privacy
+
+This extension does not collect any personal data. All workout processing happens locally in your browser.
 
 ## License
 
-See the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details. 
