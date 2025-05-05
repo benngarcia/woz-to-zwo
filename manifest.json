@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "woz2zwo",
+  "version": "1.0",
+  "description": "Parses workout details from whatsonzwift.com and downloads them as a .zwo file.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://whatsonzwift.com/workouts/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

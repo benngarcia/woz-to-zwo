@@ -1,0 +1,29 @@
+{
+  "name": "woz-to-zwo",
+  "version": "1.0.0",
+  "description": "A browser extension that creates and downloads custom workout files (.zwo) based on workout details from whatsonzwift.com.",
+  "main": "content.js",
+  "type": "module",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benngarcia/woz-to-zwo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/benngarcia/woz-to-zwo/issues"
+  },
+  "homepage": "https://github.com/benngarcia/woz-to-zwo#readme",
+  "devDependencies": {
+    "jsdom": "^23.0.0",
+    "tap-spec": "^5.0.0",
+    "tape": "^5.7.2"
+  }
+}
