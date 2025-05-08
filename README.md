@@ -1,6 +1,9 @@
 # WhatsOnZwift Workout Exporter
 
-This Chrome extension allows you to easily download Zwift workouts from the WhatsOnZwift website as .zwo files that can be imported directly into Zwift.
+This [Chrome extension](https://chromewebstore.google.com/detail/woz2zwo/hhcdmphnaagcdaphbiepeefeioojfgjm?utm_source=item-share-cb) allows you to easily download Zwift workouts from the WhatsOnZwift website as .zwo files that can be imported directly into Zwift.
+
+Download link: [https://chromewebstore.google.com/detail/woz2zwo/hhcdmphnaagcdaphbiepeefeioojfgjm](https://chromewebstore.google.com/detail/woz2zwo/hhcdmphnaagcdaphbiepeefeioojfgjm?utm_source=item-share-cb)
+
 
 ## Installation Guide
 
