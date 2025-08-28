@@ -403,7 +403,7 @@ function getWorkoutName() {
 
 
 function addDownloadButton() {
-    const workoutListDiv = document.querySelector('div.one-third.column.workoutlist');
+    const workoutListDiv = document.querySelector('article > section > div > div');
     const referenceButton = workoutListDiv?.querySelector('button[name="update-ftp"]');
 
     if (!workoutListDiv || !referenceButton) {
