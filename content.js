@@ -42,12 +42,10 @@ function parseDuration(durationStr) {
 }
 
 function parseSegment(element) {
-    // Use innerText if available (browser), otherwise use textContent (tests)
     const text = (element.innerText || element.textContent || '').trim();
     const spans = element.querySelectorAll('span[data-value]');
     const style = element.getAttribute('style') || '';
 
-    // Extract cadence if present
     const cadenceMatch = text.match(/(\d+)\s*rpm/i);
     const cadence = cadenceMatch ? parseInt(cadenceMatch[1], 10) : null;
 
@@ -61,55 +59,28 @@ function parseSegment(element) {
         }
     }
 
-    // Check for Ramp: "Xmin from Y to Z % FTP"
-    // Special pattern for combined format "7min 30sec from Y to Z"
-    const rampCombinedMatch = text.match(/^(\d+)\s*min\s+(\d+)\s*sec\s+from\s+/i);
-    if (rampCombinedMatch && spans.length === 2) {
-        const minutes = parseInt(rampCombinedMatch[1], 10) || 0;
-        const seconds = parseInt(rampCombinedMatch[2], 10) || 0;
-        const duration = (minutes * 60) + seconds;
-        
-        const powerLow = parseFloat(spans[0].dataset.value) / 100;
-        const powerHigh = parseFloat(spans[1].dataset.value) / 100;
-        
-        if (duration > 0 && !isNaN(powerLow) && !isNaN(powerHigh)) {
-            return { type: 'Ramp', duration, powerLow, powerHigh, cadence };
-        }
-    }
+    // New, more robust regex for Ramp
+    const rampMatch = text.match(/^([\d.]+\s*min(?:\s+\d+sec)?|\d+\s*sec)\s+@\s+\d+rpm,\s+from\s+/i) || 
+                      text.match(/^([\d.]+\s*min(?:\s+\d+sec)?|\d+\s*sec)\s+from\s+/i);
     
-    // Improved to handle combined minute/second formats like "7min 30sec from..."
-    const rampMatch = text.match(/^([\d.]+(?:\s+\d+sec)?)\s*(min|sec)\s+from\s+/i);
-    
-    // Also check for ramp with cadence format: "Xmin @ Nrpm, from Y to Z % FTP"
-    const rampWithCadenceMatch = text.match(/^([\d.]+(?:\s+\d+sec)?)\s*(min|sec)\s+@\s+\d+rpm,\s+from\s+/i);
-    
-    if ((rampMatch || rampWithCadenceMatch) && spans.length === 2) {
-        // Extract duration from whichever match succeeded
-        const durationMatch = rampWithCadenceMatch || rampMatch;
-        let durationStr = `${durationMatch[1]}${durationMatch[2]}`;
-        
-        // Handle combined formats like "7min 30sec"
-        if (durationMatch[1].includes("min") || durationMatch[1].includes("sec")) {
-            durationStr = durationMatch[1];
-        } else {
-            durationStr = `${durationMatch[1]}${durationMatch[2]}`;
-        }
-        
-        const duration = parseDuration(durationStr);
-        const powerLow = parseFloat(spans[0].dataset.value) / 100;
-        const powerHigh = parseFloat(spans[1].dataset.value) / 100;
-        if (duration > 0 && !isNaN(powerLow) && !isNaN(powerHigh)) {
-            return { type: 'Ramp', duration, powerLow, powerHigh, cadence };
+    if (rampMatch && spans.length === 2) {
+        try {
+            const durationStr = rampMatch[1];
+            const duration = parseDuration(durationStr);
+            const powerLow = parseFloat(spans[0].dataset.value) / 100;
+            const powerHigh = parseFloat(spans[1].dataset.value) / 100;
+            if (duration > 0 && !isNaN(powerLow) && !isNaN(powerHigh)) {
+                return { type: 'Ramp', duration, powerLow, powerHigh, cadence };
+            }
+        } catch (error) {
+            console.error("Error parsing Ramp segment:", error, text);
         }
     }
 
-    // Check for Steady State: "Xmin @ Y % FTP"
-    const steadyMatch = text.match(/^([\d.]+(?:\s+\d+sec)?)\s*(min|sec)\s+@\s+/i);
+    // New, more robust regex for Steady State
+    const steadyMatch = text.match(/^([\d.]+\s*min(?:\s+\d+sec)?|\d+\s*sec)\s+@\s+/i);
     if (steadyMatch && spans.length === 1) {
-        let durationStr = steadyMatch[1];
-        if (!durationStr.includes("min") && !durationStr.includes("sec")) {
-            durationStr = `${steadyMatch[1]}${steadyMatch[2]}`;
-        }
+        const durationStr = steadyMatch[1];
         const duration = parseDuration(durationStr);
         const power = parseFloat(spans[0].dataset.value) / 100;
         if (duration > 0 && !isNaN(power)) {
@@ -117,152 +88,38 @@ function parseSegment(element) {
         }
     }
 
-    // Special case for combined minute+second interval format:
-    // "5x 2min 30sec @ 105rpm, 276W, 3min @ 85rpm, 132W"
-    const intervalCombinedMatch = text.match(/^(\d+)x\s+(\d+)\s*min\s+(\d+)\s*sec\s+@\s+/i);
-    if (intervalCombinedMatch && spans.length === 2) {
-        try {
-            const repeat = parseInt(intervalCombinedMatch[1], 10);
-            const onMinutes = parseInt(intervalCombinedMatch[2], 10) || 0;
-            const onSeconds = parseInt(intervalCombinedMatch[3], 10) || 0;
-            const onDuration = (onMinutes * 60) + onSeconds;
-            
-            // Get power values from span attributes
-            const onPower = parseFloat(spans[0].dataset.value) / 100;
-            const offPower = parseFloat(spans[1].dataset.value) / 100;
-            
-            // Extract cadence values
-            let onCadence = null, offCadence = null;
-            
-            // Look for on cadence
-            const onCadenceMatch = text.match(/(\d+)x\s+\d+\s*min\s+\d+\s*sec\s+@\s+(\d+)\s*rpm/i);
-            if (onCadenceMatch) {
-                onCadence = parseInt(onCadenceMatch[2], 10);
-            }
-            
-            // Look for off cadence
-            const normalizedText = text.replace(/<br\s*\/?>|\n/gi, ',');
-            const parts = normalizedText.split(/,\s*/);
-            
-            if (parts.length > 1) {
-                // Look for cadence in the second part
-                const offCadenceMatch = parts.slice(1).join(',').match(/(\d+)\s*rpm/i);
-                if (offCadenceMatch) {
-                    offCadence = parseInt(offCadenceMatch[1], 10);
-                }
-                
-                // Extract off duration
-                const offText = parts.slice(1).join(',');
-                let offDuration = 0;
-                
-                // Look for durations in format "3min"
-                const offDurationMatch = offText.match(/(\d+(?:\.\d+)?)\s*min(?:\s+(\d+)\s*sec)?/i);
-                if (offDurationMatch) {
-                    const minutes = parseFloat(offDurationMatch[1]) || 0;
-                    const seconds = parseInt(offDurationMatch[2] || 0);
-                    offDuration = (minutes * 60) + seconds;
-                }
-                
-                if (offDuration > 0 && !isNaN(repeat) && onDuration > 0 && !isNaN(onPower) && !isNaN(offPower)) {
-                    return { type: 'IntervalsT', repeat, onDuration, onPower, offDuration, offPower, onCadence, offCadence };
-                }
-            }
-        } catch (error) {
-            console.error("Error parsing interval with combined format:", error, text);
-        }
-    }
-
-    // Check for Intervals, handle various formats:
-    // "Nx Xmin @ Y% FTP,<br> Mmin @ Z% FTP"
-    // "Nx Xmin @ 70rpm, 252W,<br> Mmin @ 90rpm, 211W"
-    // "5x 1min @ 70rpm, 252W,<br> 3min @ 90rpm, 211W"
-    // "5x 1min 30sec @ 100rpm, 252W,<br> 2min 30sec @ 85rpm, 211W"
-    const intervalMatch = text.match(/^(\d+)x\s+([\d.]+(?:\s+\d+sec)?)\s*(min|sec)?\s+@\s+/i);
+    // New, more robust regex for Intervals
+    const intervalMatch = text.match(/^(\d+)x\s+([\d.]+\s*min(?:\s+\d+sec)?|\d+\s*sec)\s+@/i);
     if (intervalMatch && spans.length === 2) {
         try {
             const repeat = parseInt(intervalMatch[1], 10);
-            // Handle compound durations like "1min 30sec"
-            let onDurationStr = intervalMatch[2];
-            if (intervalMatch[3] && !onDurationStr.includes("min") && !onDurationStr.includes("sec")) {
-                onDurationStr += intervalMatch[3];
-            }
-            const onDuration = parseDuration(onDurationStr);
-            
-            // IMPORTANT: Get power values from span data-value attributes
-            // These always contain the %FTP values even if the display shows Watts
+            const onDuration = parseDuration(intervalMatch[2]);
             const onPower = parseFloat(spans[0].dataset.value) / 100;
             const offPower = parseFloat(spans[1].dataset.value) / 100;
-            
-            // Extract cadence values
-            let onCadence = null, offCadence = null;
-            
-            // First, try to find the on cadence at the beginning of the interval
-            // Example: "5x 1min @ 70rpm, 252W, 3min @ 90rpm, 211W"
-            const onCadenceMatch = text.match(/(\d+)x\s+[\d.]+(?:\s+\d+sec)?\s*(?:min|sec)?\s+@\s+(\d+)\s*rpm/i);
+
+            let onCadence = null;
+            const onCadenceMatch = text.match(/@\s+(\d+)\s*rpm/i);
             if (onCadenceMatch) {
-                onCadence = parseInt(onCadenceMatch[2], 10);
+                onCadence = parseInt(onCadenceMatch[1], 10);
             }
-            
-            // Initialize offDuration at the outer scope
-            let offDuration = 0;
-            
-            // Try to find the off cadence in the second part (after the first comma or <br>)
-            // Normalize newlines and commas to make parsing easier
+
             const normalizedText = text.replace(/<br\s*\/?>|\n/gi, ',');
             const parts = normalizedText.split(/,\s*/);
-            
+            let offDuration = 0;
+            let offCadence = null;
+
             if (parts.length > 1) {
-                // Look for cadence in the second part
-                const offCadenceMatch = parts.slice(1).join(',').match(/(\d+)\s*rpm/i);
+                const offText = parts.slice(1).join(',');
+                const offDurationMatch = offText.match(/([\d.]+\s*min(?:\s+\d+sec)?|\d+\s*sec)/i);
+                if (offDurationMatch) {
+                    offDuration = parseDuration(offDurationMatch[1]);
+                }
+                const offCadenceMatch = offText.match(/(\d+)\s*rpm/i);
                 if (offCadenceMatch) {
                     offCadence = parseInt(offCadenceMatch[1], 10);
                 }
-                
-                // Extract off duration - look for duration pattern in second part
-                // This combines multiple approaches for robustness
-                
-                // First look for a duration pattern in the second part
-                const offText = parts.slice(1).join(',');
-                
-                // Look for durations like "2min" or "1min 30sec" or "30sec"
-                const minSecMatch = offText.match(/(\d+(?:\.\d+)?)\s*min(?:\s+(\d+)\s*sec)?/i);
-                const secOnlyMatch = offText.match(/(\d+(?:\.\d+)?)\s*sec/i);
-                
-                if (minSecMatch) {
-                    const minutes = parseFloat(minSecMatch[1]) || 0;
-                    const seconds = parseInt(minSecMatch[2] || 0);
-                    offDuration = (minutes * 60) + seconds;
-                } else if (secOnlyMatch) {
-                    offDuration = parseFloat(secOnlyMatch[1]);
-                }
             }
-            
-            // Try a fallback approach if we couldn't get the off duration
-            if (offDuration <= 0) {
-                // Fallback to original regex approach
-                const offDurationMatch = text.match(/(?:,|<br>|\\n).*?([\d.]+(?:\s+\d+sec)?)\s*(min|sec)/i);
-                if (offDurationMatch) {
-                    let offDurationStr = offDurationMatch[1];
-                    if (!offDurationStr.includes("min") && !offDurationStr.includes("sec")) {
-                        offDurationStr = `${offDurationMatch[1]}${offDurationMatch[2]}`;
-                    }
-                    offDuration = parseDuration(offDurationStr);
-                }
-                
-                // Try an even more generic approach for "X% FTP"-formatted intervals
-                if (offDuration <= 0 && text.includes("% FTP")) {
-                    // For cases like: "3x 2min @ 95% FTP, 1min @ 80rpm, 50% FTP"
-                    const ftpFormatMatch = text.match(/,\s*([\d.]+(?:\s+\d+sec)?)\s*(min|sec)\s+@/i);
-                    if (ftpFormatMatch) {
-                        let offDurationStr = ftpFormatMatch[1];
-                        if (!offDurationStr.includes("min") && !offDurationStr.includes("sec")) {
-                            offDurationStr = `${ftpFormatMatch[1]}${ftpFormatMatch[2]}`;
-                        }
-                        offDuration = parseDuration(offDurationStr);
-                    }
-                }
-            }
-            
+
             if (!isNaN(repeat) && onDuration > 0 && !isNaN(onPower) && offDuration > 0 && !isNaN(offPower)) {
                 return { type: 'IntervalsT', repeat, onDuration, onPower, offDuration, offPower, onCadence, offCadence };
             } else {
@@ -275,17 +132,10 @@ function parseSegment(element) {
 
     // Fallback or complex structure not directly parsed yet.
     console.warn("Could not parse segment:", text);
-    // Could add more checks here, e.g., for FreeRide if text contains "Free Ride"
-    // Or try parsing spans directly if text format is unexpected
     if (spans.length === 1) {
-        // Maybe a simple steady state missed by regex?
-        const durationMatch = text.match(/^([\d.]+(?:\s+\d+sec)?)\s*(min|sec)/i);
+        const durationMatch = text.match(/^([\d.]+\s*min(?:\s+\d+sec)?|\d+\s*sec)/i);
         if (durationMatch) {
-            let durationStr = durationMatch[1];
-            if (!durationStr.includes("min") && !durationStr.includes("sec")) {
-                durationStr = `${durationMatch[1]}${durationMatch[2]}`;
-            }
-            const duration = parseDuration(durationStr);
+            const duration = parseDuration(durationMatch[1]);
             const power = parseFloat(spans[0].dataset.value) / 100;
             if (duration > 0 && !isNaN(power)) {
                 return { type: 'SteadyState', duration, power, cadence };
@@ -293,7 +143,7 @@ function parseSegment(element) {
         }
     }
 
-    return null; // Indicate failure to parse
+    return null;
 }
 
 function generateZWO(workoutName, segments) {
